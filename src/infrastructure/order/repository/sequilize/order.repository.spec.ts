@@ -126,29 +126,40 @@ describe("Order repository test", () => {
         },
       ],
     });
-    
-    await sequelize.transaction(async (t) => {
-      await OrderItemModel.destroy({
-        where: { order_id: order.id },
-        transaction: t,
-      });
 
-      await OrderModel.update(
-        { total: order.total() },
-        { where: { id: order.id }, transaction: t }
-      );
-    });
+    const product2 = new Product("2", "Product 2", 4);
+    await productRepository.create(product2);
+
+    const orderItem2 = new OrderItem(
+      "2",
+      product2.name,
+      product2.price,
+      product2.id,
+      4
+    );
+
+    const orderToUpdate = new Order("123", "123", [orderItem2]);
+    await orderRepository.update(orderToUpdate);
 
     const orderModel2 = await OrderModel.findOne({
-      where: { id: order.id },
+      where: { id: orderToUpdate.id },
       include: ["items"],
     });
 
     expect(orderModel2.toJSON()).toStrictEqual({
-      id: order.id,
-      customer_id: order.customerId,
-      total: order.total(),
-      items: [],
+      id: orderToUpdate.id,
+      customer_id: orderToUpdate.customerId,
+      total: orderToUpdate.total(),
+      items: [
+        {
+          id: orderItem2.id,
+          name: orderItem2.name,
+          price: orderItem2.price,
+          quantity: orderItem2.quantity,
+          order_id: "123",
+          product_id: "2",
+        },
+      ],
     });
   });
 
